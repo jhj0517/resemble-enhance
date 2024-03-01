@@ -1,6 +1,7 @@
 import logging
 from functools import cache
 from pathlib import Path
+import gc 
 
 import torch
 
@@ -38,4 +39,11 @@ def enhance(dwav, sr, device, nfe=32, solver="midpoint", lambd=0.5, tau=0.5, run
     assert 0 <= tau <= 1, f"tau must be in [0, 1], got {tau}"
     enhancer = load_enhancer(run_dir, device)
     enhancer.configurate_(nfe=nfe, solver=solver, lambd=lambd, tau=tau)
-    return inference(model=enhancer, dwav=dwav, sr=sr, device=device)
+    inference_result =  inference(model=enhancer, dwav=dwav, sr=sr, device=device)
+
+    # free the memory after inference
+    del enhancer
+    torch.cuda.empty_cache()
+    gc.collect()
+
+    return inference_result
